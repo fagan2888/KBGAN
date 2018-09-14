@@ -1,0 +1,10 @@
+/__pycache__
+/fb15k237
+/wn18
+/wn18rr
+*.log
+/data_original
+/data
+/.idea
+/.env
+
