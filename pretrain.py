@@ -14,6 +14,7 @@ from compl_ex import ComplEx
 
 logger_init()
 torch.cuda.set_device(select_gpu())
+USE_GPU = True
 overwrite_config_with_args()
 
 task_dir = config().task.dir
@@ -21,6 +22,7 @@ kb_index = index_ent_rel(os.path.join(task_dir, 'train.txt'),
                          os.path.join(task_dir, 'valid.txt'),
                          os.path.join(task_dir, 'test.txt'))
 n_ent, n_rel = graph_size(kb_index)
+
 
 train_data = read_data(os.path.join(task_dir, 'train.txt'), kb_index)
 inplace_shuffle(*train_data)
@@ -34,18 +36,14 @@ train_data = [torch.LongTensor(vec) for vec in train_data]
 
 mdl_type = config().pretrain_config
 gen_config = config()[mdl_type]
-if mdl_type == 'TransE':
+if mdl_type == 'TransE' or 'TransD':
     corrupter = BernCorrupter(train_data, n_ent, n_rel)
-    gen = TransE(n_ent, n_rel, gen_config)
-elif mdl_type == 'TransD':
-    corrupter = BernCorrupter(train_data, n_ent, n_rel)
-    gen = TransD(n_ent, n_rel, gen_config)
-elif mdl_type == 'DistMult':
+    gen = TransE(n_ent, n_rel, gen_config, cuda=USE_GPU) if mdl_type =='TransE' else TransD(n_ent, n_rel, gen_config)
+elif mdl_type == 'DistMult' or 'ComplEx':
     corrupter = BernCorrupterMulti(train_data, n_ent, n_rel, gen_config.n_sample)
-    gen = DistMult(n_ent, n_rel, gen_config)
-elif mdl_type == 'ComplEx':
-    corrupter = BernCorrupterMulti(train_data, n_ent, n_rel, gen_config.n_sample)
-    gen = ComplEx(n_ent, n_rel, gen_config)
+    gen = DistMult(n_ent, n_rel, gen_config) if mdl_type == 'DistMult' else ComplEx(n_ent, n_rel, gen_config)
+
 gen.pretrain(train_data, corrupter, tester)
 gen.load(os.path.join(task_dir, gen_config.model_file))
 gen.test_link(test_data, n_ent, heads, tails)
+
