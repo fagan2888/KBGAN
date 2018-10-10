@@ -41,10 +41,12 @@ class TransEModule(BaseModule):
         self.rel_embed.weight.data.renorm_(2, 0, 1)
 
 class TransE(BaseModel):
-    def __init__(self, n_ent, n_rel, config):
+    def __init__(self, n_ent, n_rel, config, cuda=False):
         super(TransE, self).__init__()
+        self.cuda_enable = cuda
         self.mdl = TransEModule(n_ent, n_rel, config)
-        self.mdl.cuda()
+        if self.cuda_enable:
+            self.mdl.cuda()
         self.config = config
 
     def pretrain(self, train_data, corrupter, tester):
@@ -62,12 +64,13 @@ class TransE(BaseModel):
             rel = rel[rand_idx]
             dst = dst[rand_idx]
             src_corrupted, dst_corrupted = corrupter.corrupt(src, rel, dst)
-            src_cuda = src.cuda()
-            rel_cuda = rel.cuda()
-            dst_cuda = dst.cuda()
-            src_corrupted = src_corrupted.cuda()
-            dst_corrupted = dst_corrupted.cuda()
-            for s0, r, t0, s1, t1 in batch_by_num(n_batch, src_cuda, rel_cuda, dst_cuda, src_corrupted, dst_corrupted,
+            if self.cuda_enable:
+                src = src.cuda()
+                rel = rel.cuda()
+                dst = dst.cuda()
+                src_corrupted = src_corrupted.cuda()
+                dst_corrupted = dst_corrupted.cuda()
+            for s0, r, t0, s1, t1 in batch_by_num(n_batch, src, rel, dst, src_corrupted, dst_corrupted,
                                                   n_sample=n_train):
                 self.mdl.zero_grad()
                 loss = t.sum(self.mdl.pair_loss(Variable(s0), Variable(r), Variable(t0), Variable(s1), Variable(t1)))
