@@ -8,9 +8,9 @@ from logger_init import logger_init
 from data_utils import inplace_shuffle, heads_tails
 from select_gpu import select_gpu
 from trans_e import TransE
-from trans_d import TransD
-from distmult import DistMult
-from compl_ex import ComplEx
+# from trans_d import TransD
+# from distmult import DistMult
+# from compl_ex import ComplEx
 
 logger_init()
 torch.cuda.set_device(select_gpu())
