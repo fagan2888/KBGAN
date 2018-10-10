@@ -11,7 +11,7 @@ from trans_e import TransE
 
 
 logger_init()
-USE_GPU = False
+USE_GPU = True
 if USE_GPU:
     torch.cuda.set_device(select_gpu())
 overwrite_config_with_args()
